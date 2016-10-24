@@ -81,4 +81,4 @@ def accept_link(tag, origin, queue, visited):
     if already_exists or not child.has_same_domain(origin):
         return
 
-    queue.insert(0, child)
+    queue.append(child)
