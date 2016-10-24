@@ -10,6 +10,11 @@ setup(
     install_requires=[
         'requests',
         'BeautifulSoup',
+        'tldextract',
+    ],
+    tests_require=[
         'pytest',
+        'pytest-pythonpath',
+        'mock',
     ]
 )
