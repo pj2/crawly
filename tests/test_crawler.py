@@ -25,6 +25,10 @@ def test_live_site_without_exception(site):
     ('http://foo.bar.example.com/resource.html', 'http://www.example.com', None),
     ('http://example.com/resource.html', 'http://www.example.com', None),
 
+    # Query string / fragment
+    ('http://example.com/resource.html?foo=bar', 'http://example.com', 'http://example.com/resource.html'),
+    ('http://example.com/resource.html#blah', 'http://example.com', 'http://example.com/resource.html'),
+
     # Relative, not visited before
     ('resource.html', 'http://example.com', None),
     ('/resource.html', 'http://example.com', None),
@@ -56,7 +60,8 @@ def test_good_links(href, origin, visited):
     assert queue == old, 'sanity check failed'
 
     crawler.accept_link(tag, origin, queue, set())
-    assert [Href(href).to_absolute(origin)] + old == queue
+    expected = [Href(href).to_absolute(origin)] + old
+    assert expected == queue
 
 
 @pytest.mark.parametrize('href,origin,visited', [
@@ -78,6 +83,10 @@ def test_good_links(href, origin, visited):
     # Different TLDs
     ('http://www.example.com/resource.js', 'https://example.net', None),
 
+    # Query string / fragment
+    ('http://example.com/resource.html?foo=bar', 'http://example.com', 'http://example.com/resource.html?foo=bar'),
+    ('http://example.com/resource.html#blah', 'http://example.com', 'http://example.com/resource.html#blah'),
+
     # Already visited - HTTP
     ('resource.html', 'http://example.com', 'http://example.com/resource.html'),
     ('/resource.html', 'http://example.com', 'http://example.com/resource.html'),
@@ -96,9 +105,9 @@ def test_bad_links(href, origin, visited):
     tag = Tag(name='a', attrs={'href': href})
     origin = Href(origin)
     queue = [Href(visited)] if visited is not None else []
-    old = copy.copy(queue)
+    expected = copy.copy(queue)
 
-    assert queue == old, 'sanity check failed'
+    assert queue == expected, 'sanity check failed'
 
     crawler.accept_link(tag, origin, queue, set())
-    assert old == queue
+    assert expected == queue
