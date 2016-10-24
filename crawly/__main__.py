@@ -1,7 +1,7 @@
 import argparse
 import logging
 from .crawler import crawl
-from .url import URL
+from .href import Href
 
 
 if __name__ == '__main__':
@@ -13,4 +13,5 @@ if __name__ == '__main__':
     logging.basicConfig()
     logging.getLogger().setLevel(logging.DEBUG if args.v else logging.ERROR)
 
-    crawl(URL(args.url))
+    # TODO Check this is a valid URL
+    crawl(Href(args.url))
