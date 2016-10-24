@@ -1,42 +1,56 @@
+import logging
 import re
 import requests
 from HTMLParser import HTMLParseError
 from bs4 import BeautifulSoup
 from .href import Href
 
+logger = logging.getLogger(__name__)
+
 
 def crawl(origin):
     """Crawl a URL following all links within its domain and printing a
     tree."""
+    i = 0
     queue = [origin]
     visited = set()
 
     while queue:
         cur = queue.pop(0)
         _crawl(cur, origin, visited, queue)
+        i += 1
+
+    print 'Accessed {0} resources.'.format(i)
 
 
 def _crawl(href, origin, visited, queue):
     """Access ``href`` and produce the next portion of the tree."""
-    # Lookup the resource
     try:
         resp = requests.get(str(href))
         visited.add(href)
-        print href
+    except IOError, e:
+        logger.error(u'Unexpected error whilst getting {0}.'.format(href), exc_info=e)
 
-        resp.raise_for_status()
-    except IOError:
-        return # Don't follow unsuccessful links
+        status = '(failed)'
+        success = False
+    else:
+        status = resp.status_code
+        success = status >= 200 and status < 400
 
-    is_html = 'text/html' in resp.headers.get('Content-Type')
-    if not is_html:
-        return # No more links to follow on this resource
+    is_page = 'text/html' in resp.headers.get('Content-Type')
+    if is_page:
+        if success:
+            try:
+                links = extract_links(resp.text)
+            except ValueError:
+                pass # Ignore links in malformed documents
+            else:
+                for tag in links:
+                    accept_link(tag, origin, queue, visited)
 
-    try:
-        for tag in extract_links(resp.text):
-            accept_link(tag, origin, queue, visited)
-    except ValueError:
-        return # Skip links in malformed documents
+        print href, status # Web page
+    else:
+        print '*', href.uri # Static file
 
 
 def extract_links(html):
@@ -44,7 +58,7 @@ def extract_links(html):
     document. Raises ValueError if the HTML is malformed."""
     try:
         soup = BeautifulSoup(html, 'html.parser')
-        return soup.find_all(name=re.compile('href|src|link|a'))
+        return soup.find_all(name=re.compile('img|script|link|a'))
     except (HTMLParseError, IOError):
         raise ValueError('malformed page')
 
@@ -59,13 +73,12 @@ def accept_link(tag, origin, queue, visited):
     if child.scheme and child.scheme not in ('http', 'https'):
         return
 
+    # Ensure protocol + netloc exists for relative and double slash URLs
     if child.is_relative() or not child.parts.scheme:
         child = child.to_absolute(origin)
 
-    if tag.name == 'a':
-        # Add this link to the queue if it qualifies
-        already_exists = child in visited or child in queue
-        if not already_exists and child.has_same_domain(origin):
-            queue.insert(0, child)
-    else:
-        print child
+    already_exists = child in visited or child in queue
+    if already_exists or not child.has_same_domain(origin):
+        return
+
+    queue.insert(0, child)

@@ -13,7 +13,9 @@ class Href(object):
     @property
     def uri(self):
         """Return the resource section of the Href."""
-        return self.parts.path
+        return (self.parts.path +
+                (u'?' + self.parts.query if self.parts.query else u'') +
+                (u'#' + self.parts.fragment if self.parts.fragment else u''))
 
     @property
     def scheme(self):
