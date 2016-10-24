@@ -26,17 +26,17 @@ def _crawl(href, origin, visited, queue):
 
         resp.raise_for_status()
     except IOError:
-        return  # Don't follow unsuccessful links
+        return # Don't follow unsuccessful links
 
     is_html = 'text/html' in resp.headers.get('Content-Type')
     if not is_html:
-        return  # No more links to follow on this resource
+        return # No more links to follow on this resource
 
     try:
         for tag in extract_links(resp.text):
             accept_link(tag, origin, queue, visited)
     except ValueError:
-        return  # Skip links in malformed documents
+        return # Skip links in malformed documents
 
 
 def extract_links(html):
