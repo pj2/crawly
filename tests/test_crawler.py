@@ -2,7 +2,6 @@
 import copy
 import pytest
 from urlparse import urljoin
-from bs4.element import Tag
 from crawly import crawler
 from crawly.href import Href
 
@@ -52,16 +51,13 @@ def test_live_site_without_exception(site):
 ])
 def test_good_links(href, origin, visited):
     """Adds valid links to queue"""
-    tag = Tag(name='a', attrs={'href': href})
     origin = Href(origin)
     queue = [Href(visited)] if visited is not None else []
     old = copy.copy(queue)
 
-    assert queue == old, 'sanity check failed'
-
-    crawler.accept_link(tag, origin, queue, set())
-    expected = [Href(href).to_absolute(origin)] + old
-    assert expected == queue
+    assert queue == old
+    crawler.accept_link(Href(href), origin, queue, set())
+    assert old + [Href(href).to_absolute(origin)] == queue
 
 
 @pytest.mark.parametrize('href,origin,visited', [
@@ -96,18 +92,12 @@ def test_good_links(href, origin, visited):
     ('resource.html', 'https://example.com', 'https://example.com/resource.html'),
     ('//resource.html', 'https://example.com', 'https://example.com/resource.html'),
     ('https://example.com/resource.html', 'https://example.com', 'https://example.com/resource.html'),
-
-    # Malformed
-    ('', 'http://example.com', None)
 ])
 def test_bad_links(href, origin, visited):
     """Ignores invalid links"""
-    tag = Tag(name='a', attrs={'href': href})
-    origin = Href(origin)
     queue = [Href(visited)] if visited is not None else []
     expected = copy.copy(queue)
 
-    assert queue == expected, 'sanity check failed'
-
-    crawler.accept_link(tag, origin, queue, set())
+    assert expected == queue
+    crawler.accept_link(Href(href), Href(origin), queue, set())
     assert expected == queue
