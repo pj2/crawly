@@ -43,7 +43,7 @@ class Href(object):
         return Href(urljoin(base_href.raw, raw))
 
     def __eq__(self, other):
-        return self.parts == other.parts
+        return self.parts == getattr(other, 'parts', None)
 
     def __hash__(self):
         return self.parts.__hash__()
