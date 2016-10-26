@@ -5,7 +5,7 @@ from .crawler import Crawler
 from .url import URL
 
 
-if __name__ == '__main__':
+def main():
     argp = argparse.ArgumentParser('crawly')
     argp.add_argument('url', help='target URL to crawl e.g. http://www.google.com')
     argp.add_argument('-v', action='store_true', help='produce more output')
@@ -25,3 +25,7 @@ if __name__ == '__main__':
         Crawler(url, args.s).crawl()
     except (KeyboardInterrupt, EOFError):
         pass
+
+
+if __name__ == '__main__':
+    main()
