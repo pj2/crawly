@@ -38,7 +38,7 @@ class Crawler(object):
     def _crawl(self, url):
         """Access ``url`` and produce the next portion of the tree."""
         try:
-            resp = requests.get(unicode(url))
+            resp = requests.get(unicode(url), timeout=5)
             arrived_at = URL(resp.url)
 
             # Mark the target URL and any other URLs we may have visited
@@ -48,7 +48,7 @@ class Crawler(object):
             for redirect in resp.history:
                 self.visited.add(URL(redirect.url))
         except IOError, e:
-            logger.error(u'Unexpected error whilst getting {0}.'.format(arrived_at), exc_info=e)
+            logger.error(u'Unexpected error whilst getting {0}.'.format(url), exc_info=e)
             status = -1
             success = False
         else:
