@@ -1,7 +1,7 @@
 import argparse
 import logging
 from .crawler import Crawler
-from .href import Href
+from .url import URL
 
 
 if __name__ == '__main__':
@@ -16,6 +16,6 @@ if __name__ == '__main__':
 
     try:
         # TODO Check this is a valid URL
-        Crawler(Href(args.url), args.s).crawl()
+        Crawler(URL(args.url), args.s).crawl()
     except (KeyboardInterrupt, EOFError):
         pass

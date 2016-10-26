@@ -75,7 +75,7 @@ class Crawler(object):
         """Return all links found under ``tag_names`` in the HTML document."""
         tags = soup.find_all(name=re.compile('|'.join(tag_names)))
         for tag in tags:
-            url = self.parse_url(tag.get('url') or tag.get('src'))
+            url = self.parse_url(tag.get('href') or tag.get('src'))
             if url:
                 yield url
 
