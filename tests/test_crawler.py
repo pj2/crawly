@@ -2,15 +2,15 @@
 import pytest
 from urlparse import urljoin
 from crawly.crawler import Crawler
-from crawly.href import Href
+from crawly.url import URL
 
 
 def test_live_site_without_exception(site):
     """Crawls a live site without raising an exception"""
-    Crawler(Href(urljoin(site, '/index.html'))).crawl()
+    Crawler(URL(urljoin(site, '/index.html'))).crawl()
 
 
-@pytest.mark.parametrize('href,origin,visited', [
+@pytest.mark.parametrize('url,origin,visited', [
     # Absolute, same origin, not visited before
     ('http://example.com/resource.html', 'http://example.com', None),
     ('https://example.com/resource.html', 'http://example.com', None),
@@ -48,15 +48,15 @@ def test_live_site_without_exception(site):
     (u'/šðèæž ŠÐÈÆŽ', 'http://example.com', None),
     (u'http://example.com/šðèæž ŠÐÈÆŽ', 'http://example.com', None),
 ])
-def test_good_links(href, origin, visited):
+def test_good_links(url, origin, visited):
     """Adds valid links to queue"""
-    crawler = Crawler(Href(origin))
-    crawler.queue = [Href(visited)] if visited is not None else []
+    crawler = Crawler(URL(origin))
+    crawler.queue = [URL(visited)] if visited is not None else []
 
-    assert crawler.parse_href(href) is not None
+    assert crawler.parse_url(url) is not None
 
 
-@pytest.mark.parametrize('href,origin,visited', [
+@pytest.mark.parametrize('url,origin,visited', [
     # Absolute, different origin, not visited before
     ('http://example.com/resource.js', 'https://foobar.net', None),
     ('https://example.com/resource.js', 'https://foobar.net', None),
@@ -89,9 +89,9 @@ def test_good_links(href, origin, visited):
     ('//resource.html', 'https://example.com', 'https://example.com/resource.html'),
     ('https://example.com/resource.html', 'https://example.com', 'https://example.com/resource.html'),
 ])
-def test_bad_links(href, origin, visited):
+def test_bad_links(url, origin, visited):
     """Ignores invalid links"""
-    crawler = Crawler(Href(origin))
-    crawler.queue = [Href(visited)] if visited is not None else []
+    crawler = Crawler(URL(origin))
+    crawler.queue = [URL(visited)] if visited is not None else []
 
-    assert crawler.parse_href(href) is None
+    assert crawler.parse_url(url) is None

@@ -3,7 +3,7 @@ import re
 import requests
 from HTMLParser import HTMLParseError
 from bs4 import BeautifulSoup
-from .href import Href
+from .url import URL
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +37,13 @@ class Crawler(object):
 
         print 'Accessed {0} resources.'.format(n)
 
-    def _crawl(self, href):
-        """Access ``href`` and produce the next portion of the tree."""
+    def _crawl(self, url):
+        """Access ``url`` and produce the next portion of the tree."""
         try:
-            resp = requests.get(str(href))
-            self.visited.add(href)
+            resp = requests.get(str(url))
+            self.visited.add(url)
         except IOError, e:
-            logger.error(u'Unexpected error whilst getting {0}.'.format(href), exc_info=e)
+            logger.error(u'Unexpected error whilst getting {0}.'.format(url), exc_info=e)
             status = -1
             success = False
         else:
@@ -51,7 +51,7 @@ class Crawler(object):
             success = self.is_success_code(status)
 
         is_page = 'text/html' in resp.headers.get('Content-Type')
-        self.print_link(href, is_page, status=status)
+        self.print_link(url, is_page, status=status)
 
         if not (is_page and success):
             return # No more links to process here
@@ -59,7 +59,7 @@ class Crawler(object):
         try:
             soup = BeautifulSoup(resp.text, 'html.parser')
         except (HTMLParseError, IOError):
-            logger.error(u'Failed to parse {0} as HTML.'.format(href), exc_info=e)
+            logger.error(u'Failed to parse {0} as HTML.'.format(url), exc_info=e)
             return
 
         # Print out static file listing
@@ -68,42 +68,42 @@ class Crawler(object):
                 self.print_link(static, False)
 
         # Add HTML pages to the queue
-        for href in self.extract_links(soup, ['a']):
-            self.queue.append(href)
+        for url in self.extract_links(soup, ['a']):
+            self.queue.append(url)
 
     def extract_links(self, soup, tag_names):
         """Return all links found under ``tag_names`` in the HTML document."""
         tags = soup.find_all(name=re.compile('|'.join(tag_names)))
         for tag in tags:
-            href = self.parse_href(tag.get('href') or tag.get('src'))
-            if href:
-                yield href
+            url = self.parse_url(tag.get('url') or tag.get('src'))
+            if url:
+                yield url
 
-    def parse_href(self, href_text):
-        """Attempt to parse a href attribute. Returns a Href if successful or None otherwise."""
-        if not href_text:
+    def parse_url(self, url_text):
+        """Attempt to parse a url attribute. Returns a URL if successful or None otherwise."""
+        if not url_text:
             return
 
-        href = Href(href_text)
-        if href.scheme and href.scheme not in ('http', 'https'):
+        url = URL(url_text)
+        if url.scheme and url.scheme not in ('http', 'https'):
             return
 
         # Ensure protocol + netloc exists for relative and double slash URLs
-        if href.is_relative() or not href.parts.scheme:
-            href = href.to_absolute(self.origin)
+        if url.is_relative() or not url.parts.scheme:
+            url = url.to_absolute(self.origin)
 
-        seen = href in self.visited or href in self.queue
-        if seen or not href.has_same_domain(self.origin):
+        seen = url in self.visited or url in self.queue
+        if seen or not url.has_same_domain(self.origin):
             return
 
-        return href
+        return url
 
-    def print_link(self, href, is_page, status=None):
+    def print_link(self, url, is_page, status=None):
         """Print out a line of the site map."""
         print ' ' * (self.depth * 2 + (0 if is_page else 1)),
         print 'P' if is_page else 'S',
 
-        link = str(href)
+        link = str(url)
         if len(link) > self.MAX_URL_WIDTH:
             print link[:self.MAX_URL_WIDTH - 3] + ' ..',
         else:
