@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
-import copy
 import pytest
 from urlparse import urljoin
-from crawly import crawler
+from crawly.crawler import Crawler
 from crawly.href import Href
 
 
 def test_live_site_without_exception(site):
     """Crawls a live site without raising an exception"""
-    crawler.crawl(Href(urljoin(site, '/index.html')))
+    Crawler(Href(urljoin(site, '/index.html'))).crawl()
 
 
 @pytest.mark.parametrize('href,origin,visited', [
@@ -51,13 +50,10 @@ def test_live_site_without_exception(site):
 ])
 def test_good_links(href, origin, visited):
     """Adds valid links to queue"""
-    origin = Href(origin)
-    queue = [Href(visited)] if visited is not None else []
-    old = copy.copy(queue)
+    crawler = Crawler(Href(origin))
+    crawler.queue = [Href(visited)] if visited is not None else []
 
-    assert queue == old
-    crawler.accept_link(Href(href), origin, queue, set())
-    assert old + [Href(href).to_absolute(origin)] == queue
+    assert crawler.parse_href(href) is not None
 
 
 @pytest.mark.parametrize('href,origin,visited', [
@@ -95,9 +91,7 @@ def test_good_links(href, origin, visited):
 ])
 def test_bad_links(href, origin, visited):
     """Ignores invalid links"""
-    queue = [Href(visited)] if visited is not None else []
-    expected = copy.copy(queue)
+    crawler = Crawler(Href(origin))
+    crawler.queue = [Href(visited)] if visited is not None else []
 
-    assert expected == queue
-    crawler.accept_link(Href(href), Href(origin), queue, set())
-    assert expected == queue
+    assert crawler.parse_href(href) is None
