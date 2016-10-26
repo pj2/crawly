@@ -10,20 +10,17 @@ logger = logging.getLogger(__name__)
 
 class Crawler(object):
     """Crawls a URL following all links within its domain and printing a tree."""
-    MAX_URL_WIDTH = 79
 
     def __init__(self, origin, print_static=False):
         self.origin = origin
         self.print_static = print_static
         self.visited = set()
         self.queue = []
-        self.depth = 0
 
     def reset(self):
         """Reset the crawler's state."""
         self.visited = set()
         self.queue = [self.origin]
-        self.depth = 0
 
     def crawl(self):
         """Crawl for links beginning from ``origin``."""
@@ -34,6 +31,7 @@ class Crawler(object):
             cur = self.queue.pop(0)
             self._crawl(cur)
             n += 1
+            print ''
 
         print 'Accessed {0} resources.'.format(n)
 
@@ -65,14 +63,17 @@ class Crawler(object):
         # Print out static file listing
         if self.print_static:
             for static in self.extract_links(soup, ['img', 'link', 'script']):
-                self.print_link(static, False)
+                self.print_link(static, False, level=1)
 
-        # Add HTML pages to the queue
+        # Add unvisited HTML pages to the queue
         for url in self.extract_links(soup, ['a']):
-            self.queue.append(url)
+            if url not in self.visited:
+                self.queue.append(url)
+
+            self.print_link(url, True, level=1)
 
     def extract_links(self, soup, tag_names):
-        """Return all links found under ``tag_names`` in the HTML document."""
+        """Return all URLs found under ``tag_names`` in the HTML document."""
         tags = soup.find_all(name=re.compile('|'.join(tag_names)))
         for tag in tags:
             url = self.parse_url(tag.get('href') or tag.get('src'))
@@ -98,16 +99,11 @@ class Crawler(object):
 
         return url
 
-    def print_link(self, url, is_page, status=None):
+    def print_link(self, url, is_page, level=0, status=None):
         """Print out a line of the site map."""
-        print ' ' * (self.depth * 2 + (0 if is_page else 1)),
+        print ' ' * level * 4,
         print 'P' if is_page else 'S',
-
-        link = str(url)
-        if len(link) > self.MAX_URL_WIDTH:
-            print link[:self.MAX_URL_WIDTH - 3] + ' ..',
-        else:
-            print link,
+        print str(url),
 
         if status is not None and not self.is_success_code(status):
             print status,
