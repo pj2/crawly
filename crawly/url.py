@@ -4,6 +4,7 @@ import tldextract
 
 class URL(object):
     """A resource locator."""
+    __slots__ = ['raw', 'parts', 'tld_extract']
 
     def __init__(self, raw):
         self.raw = raw
@@ -46,7 +47,9 @@ class URL(object):
         return self.parts.__hash__()
 
     def __str__(self):
-        return self.parts.geturl()
+        return unicode(self.parts.geturl())
+
+    __unicode__ = __str__
 
     def __repr__(self):
         return '<URL: {0}>'.format(str(self))

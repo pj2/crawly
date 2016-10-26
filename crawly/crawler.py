@@ -38,10 +38,17 @@ class Crawler(object):
     def _crawl(self, url):
         """Access ``url`` and produce the next portion of the tree."""
         try:
-            resp = requests.get(str(url))
+            resp = requests.get(unicode(url))
+            arrived_at = URL(resp.url)
+
+            # Mark the target URL and any other URLs we may have visited
             self.visited.add(url)
+            self.visited.add(arrived_at)
+
+            for redirect in resp.history:
+                self.visited.add(URL(redirect.url))
         except IOError, e:
-            logger.error(u'Unexpected error whilst getting {0}.'.format(url), exc_info=e)
+            logger.error(u'Unexpected error whilst getting {0}.'.format(arrived_at), exc_info=e)
             status = -1
             success = False
         else:
@@ -49,7 +56,7 @@ class Crawler(object):
             success = self.is_success_code(status)
 
         is_page = 'text/html' in resp.headers.get('Content-Type')
-        self.print_link(url, is_page, status=status)
+        self.print_link(arrived_at, is_page, status=status)
 
         if not (is_page and success):
             return # No more links to process here
@@ -57,14 +64,14 @@ class Crawler(object):
         try:
             soup = BeautifulSoup(resp.text, 'html.parser')
         except (HTMLParseError, IOError):
-            logger.error(u'Failed to parse {0} as HTML.'.format(url), exc_info=e)
+            logger.error(u'Failed to parse {0} as HTML.'.format(arrived_at), exc_info=e)
             return
 
         # Print out static file listing
         if self.print_static:
-            self.process_static(soup, url)
+            self.process_static(soup, arrived_at)
 
-        self.process_a(soup, url)
+        self.process_a(soup, arrived_at)
 
     def process_static(self, soup, source_url):
         """Process links to static files."""
@@ -113,7 +120,7 @@ class Crawler(object):
         """Print out a line of the site map."""
         print ' ' * level * 4,
         print 'P' if is_page else 'S',
-        print str(url),
+        print unicode(url),
 
         if status is not None:
             print status,
