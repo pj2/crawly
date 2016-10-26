@@ -37,10 +37,7 @@ class URL(object):
         if base_url.is_relative():
             raise ValueError('base_url must be absolute')
 
-        scheme = self.scheme or base_url.scheme or u'http'
-        raw = urlunparse((scheme,) + self.parts[1:])
-
-        return URL(urljoin(base_url.raw, raw))
+        return URL(urljoin(base_url.raw, self.raw))
 
     def __eq__(self, other):
         return self.parts == getattr(other, 'parts', None)

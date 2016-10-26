@@ -62,26 +62,37 @@ class Crawler(object):
 
         # Print out static file listing
         if self.print_static:
-            for static in self.extract_links(soup, ['img', 'link', 'script']):
-                self.print_link(static, False, level=1)
+            self.process_static(soup, url)
 
-        # Add unvisited HTML pages to the queue
-        for url in self.extract_links(soup, ['a']):
-            if url not in self.visited:
+        self.process_a(soup, url)
+
+    def process_static(self, soup, source_url):
+        """Process links to static files."""
+        for static in self.extract_links(soup, source_url, ['img', 'link', 'script']):
+            self.print_link(static, False, level=1)
+
+    def process_a(self, soup, source_url):
+        """Process and accept more crawlable links into the queue."""
+        a_links = set(self.extract_links(soup, source_url, ['a']))
+        for url in a_links:
+            # Add unvisited / unmarked HTML pages to the queue
+            added = url in self.visited or url in self.queue
+            if not added:
                 self.queue.append(url)
 
+            # Print out all unique URLs on this page
             self.print_link(url, True, level=1)
 
-    def extract_links(self, soup, tag_names):
+    def extract_links(self, soup, source_url, tag_names):
         """Return all URLs found under ``tag_names`` in the HTML document."""
         tags = soup.find_all(name=re.compile('|'.join(tag_names)))
         for tag in tags:
-            url = self.parse_url(tag.get('href') or tag.get('src'))
+            url = self.parse_url(tag.get('href') or tag.get('src'), source_url)
             if url:
                 yield url
 
-    def parse_url(self, url_text):
-        """Attempt to parse a url attribute. Returns a URL if successful or None otherwise."""
+    def parse_url(self, url_text, source_url):
+        """Attempt to parse a URL attribute. Returns a URL if successful or None otherwise."""
         if not url_text:
             return
 
@@ -91,10 +102,9 @@ class Crawler(object):
 
         # Ensure protocol + netloc exists for relative and double slash URLs
         if url.is_relative() or not url.parts.scheme:
-            url = url.to_absolute(self.origin)
+            url = url.to_absolute(source_url)
 
-        seen = url in self.visited or url in self.queue
-        if seen or not url.has_same_domain(self.origin):
+        if not url.has_same_domain(self.origin):
             return
 
         return url
@@ -105,7 +115,7 @@ class Crawler(object):
         print 'P' if is_page else 'S',
         print str(url),
 
-        if status is not None and not self.is_success_code(status):
+        if status is not None:
             print status,
 
         print ''
