@@ -68,7 +68,7 @@ class Crawler(object):
 
     def process_static(self, soup, source_url):
         """Process links to static files."""
-        for static in self.extract_links(soup, source_url, ['img', 'link', 'script']):
+        for static in set(self.extract_links(soup, source_url, ['img', 'link', 'script'])):
             self.print_link(static, False, level=1)
 
     def process_a(self, soup, source_url):
