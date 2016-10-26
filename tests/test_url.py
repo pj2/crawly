@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pytest
 from crawly.url import URL
 
@@ -29,7 +30,7 @@ def test_equality_inverse():
 
 
 def test_different_protocol_not_equal():
-    """Return not equal is protocol is different"""
+    """Return not equal if protocol is different"""
     loc_1 = 'http://example.com/foo_bar.html'
     loc_2 = 'https://example.com/bar_foo.html'
     assert URL(loc_1) != URL(loc_2)
@@ -95,3 +96,29 @@ def test_different_origin_domain():
     b = URL('http://foobar.com/foo.html')
 
     assert not a.has_same_domain(b)
+
+
+def test_querystring():
+    assert URL('http://example.com/resource.html?foo=bar') == \
+        URL('http://example.com/resource.html?foo=bar')
+
+
+def test_join_no_slash_relative():
+    a = URL('https://www.google.com/intl/en/about/')
+    b = URL('company/philosophy/')
+
+    assert b.to_absolute(a) == URL('https://www.google.com/intl/en/about/company/philosophy/')
+
+
+def test_join_relative():
+    a = URL('https://example.com/resource.html')
+    b = URL('/resource.html')
+
+    assert b.to_absolute(a) == URL('https://example.com/resource.html')
+
+
+def test_unicode():
+    a = URL('http://example.com/')
+    b = URL(u'/世界')
+
+    assert b.to_absolute(a) == URL(u'http://example.com/世界')
